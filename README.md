@@ -9,6 +9,29 @@
 - ⚡ **幂等性设计**：已安装的工具自动跳过，可重复运行
 - 🛠️ **完整工具链**：从基础开发环境到 AI 编程助手一站式安装
 
+## 🚀 快速开始
+
+### 在线安装（推荐）
+
+```bash
+# 克隆仓库
+git clone https://github.com/Xueheng-Li/ai-tools-installation.git
+cd ai-tools-installation
+
+# 运行安装脚本（自动检测架构）
+./install_ai_tools.sh
+```
+
+### 安装选项
+
+```bash
+./install_ai_tools.sh                 # 标准安装
+./install_ai_tools.sh --with-skills   # 包含额外 Skills
+./install_ai_tools.sh --dry-run       # 预览模式（不实际安装）
+./install_ai_tools.sh --skip-vscode   # 跳过 VSCode
+./install_ai_tools.sh --skip-python   # 跳过 Python
+```
+
 ## 📋 安装内容
 
 | 类别 | 工具 |
@@ -97,30 +120,8 @@
 | Document Skills | Anthropic 官方文档处理插件 |
 | SYSU Awesome CC | 中大 Claude Code 扩展集合 |
 
-## 🚀 快速开始
 
-### 在线安装（推荐）
-
-```bash
-# 克隆仓库
-git clone https://github.com/Xueheng-Li/ai-tools-installation.git
-cd ai-tools-installation
-
-# 运行安装脚本（自动检测架构）
-./install_ai_tools.sh
-```
-
-### 安装选项
-
-```bash
-./install_ai_tools.sh                 # 标准安装
-./install_ai_tools.sh --with-skills   # 包含额外 Skills
-./install_ai_tools.sh --dry-run       # 预览模式（不实际安装）
-./install_ai_tools.sh --skip-vscode   # 跳过 VSCode
-./install_ai_tools.sh --skip-python   # 跳过 Python
-```
-
-### 离线安装
+## 离线安装
 
 适用于无法联网的机器：
 

@@ -8,8 +8,9 @@
 
 ```
 apps/
-├── 📄 README.md              # 本文件
-├── 🔧 xcode-clt/             # Xcode Command Line Tools (需手动下载)
+├── 📄 README.md                      # 本文件
+├── 🚀 install_ai_tools_offline.sh    # 离线安装脚本
+├── 🔧 xcode-clt/                     # Xcode Command Line Tools (需手动下载)
 ├── 💻 casks/                 # GUI 应用程序
 │   ├── visual-studio-code/
 │   │   ├── arm64/            # Apple Silicon 版本
@@ -28,9 +29,7 @@ apps/
 │       ├── arm64/
 │       └── x86_64/
 ├── 🧩 vscode-extensions/     # VSCode 插件 (.vsix 文件)
-├── 🐍 python/                # Python wheels 包
-│   ├── arm64/                # Apple Silicon 版本
-│   └── x86_64/               # Intel 版本
+├── 🐍 python/                # Python wheels 包（不分架构）
 └── ⚡ skills/                 # Claude Code Skills
     ├── anthropics-skills/    # 官方 Skills
     └── sysu-awesome-cc/      # 社区 Skills
@@ -42,10 +41,12 @@ apps/
 
 ### 步骤 1️⃣：下载所有工具
 
-在有网络的机器上运行：
+在有网络的机器上，从项目根目录运行：
 
 ```bash
-./download_tools.sh
+./download_tools.sh                   # 下载双架构
+./download_tools.sh --arch arm64      # 仅 Apple Silicon
+./download_tools.sh --arch x86_64     # 仅 Intel
 ```
 
 ### 步骤 2️⃣：手动下载 Xcode CLT（可选）
@@ -60,49 +61,63 @@ apps/
 
 ### 步骤 3️⃣：复制到目标机器
 
-将整个 `apps/` 目录复制到目标 Mac：
+将整个项目目录（或至少 `apps/` 目录）复制到目标 Mac：
 
 ```bash
 # 使用 U 盘、移动硬盘或局域网传输
+cp -r AI工具安装配置/ /Volumes/USB/
+# 或只复制 apps 目录
 cp -r apps/ /Volumes/USB/
 ```
 
 ### 步骤 4️⃣：运行离线安装
 
-在目标机器上执行：
+在目标机器上执行（离线安装脚本已移至 apps/ 目录内）：
 
 ```bash
-./install_ai_tools_offline.sh
+# 从项目根目录运行
+./apps/install_ai_tools_offline.sh
+
+# 或进入 apps 目录后运行
+cd apps && ./install_ai_tools_offline.sh
 ```
 
 ---
 
 ## 📖 脚本使用说明
 
-### 下载脚本
+### 下载脚本（位于项目根目录）
 
 ```bash
 # 查看帮助
 ./download_tools.sh --help
 
-# 下载所有工具
+# 下载所有工具（双架构）
 ./download_tools.sh
 
 # 仅下载特定架构
-./download_tools.sh --arch arm64
+./download_tools.sh --arch arm64      # Apple Silicon
+./download_tools.sh --arch x86_64     # Intel
 ```
 
-### 安装脚本
+### 离线安装脚本（位于 apps/ 目录内）
 
 ```bash
 # 查看帮助
 ./install_ai_tools_offline.sh --help
 
-# 完整安装
+# 基础安装（不含 Skills）
 ./install_ai_tools_offline.sh
 
-# 仅安装特定组件
-./install_ai_tools_offline.sh --component vscode
+# 完整安装（含 Skills）
+./install_ai_tools_offline.sh --with-skills
+
+# 跳过特定组件
+./install_ai_tools_offline.sh --skip-vscode
+./install_ai_tools_offline.sh --skip-python
+
+# 预览模式（不实际执行）
+./install_ai_tools_offline.sh --dry-run
 ```
 
 ---
@@ -147,4 +162,6 @@ uname -m
 
 ---
 
-*📅 最后更新：2026-01*
+*📅 最后更新：2026-01-30*
+
+> 📝 **变更记录**: `install_ai_tools_offline.sh` 已移至 `apps/` 目录内，与离线资源放在一起，便于整体复制和部署。
