@@ -12,8 +12,7 @@
 #   --dry-run         只显示将要执行的操作，不实际执行
 #   --help            显示帮助信息
 #
-# 离线安装包目录结构:
-# apps/
+# 离线安装包目录结构 (此脚本位于 apps/ 目录内):
 # ├── xcode-clt/              - Xcode CLT .pkg (手动下载)
 # ├── casks/
 # │   ├── visual-studio-code/{arm64,x86_64}/
@@ -45,7 +44,7 @@ LOG_FILE="$HOME/ai_tools_offline_install.log"
 
 # 脚本所在目录 (离线包根目录)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APPS_DIR="$SCRIPT_DIR/apps"
+APPS_DIR="$SCRIPT_DIR"
 
 log() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
@@ -134,12 +133,12 @@ show_help() {
     echo "  $0 --skip-vscode        # 跳过 VSCode"
     echo "  $0 --dry-run            # 预览模式"
     echo ""
-    echo "离线包目录结构:"
-    echo "  apps/xcode-clt/       - Xcode CLT .pkg (手动下载)"
-    echo "  apps/casks/           - DMG 和 ZIP 应用"
-    echo "  apps/vscode-extensions/ - VSCode 插件 (.vsix)"
-    echo "  apps/python/          - Python 包 (.whl)"
-    echo "  apps/skills/          - Claude Code Skills"
+    echo "离线包目录结构 (与此脚本同目录):"
+    echo "  xcode-clt/            - Xcode CLT .pkg (手动下载)"
+    echo "  casks/                - DMG 和 ZIP 应用"
+    echo "  vscode-extensions/    - VSCode 插件 (.vsix)"
+    echo "  python/               - Python 包 (.whl)"
+    echo "  skills/               - Claude Code Skills"
     exit 0
 }
 
@@ -215,11 +214,11 @@ check_apps_dir() {
     if [[ ! -d "$APPS_DIR" ]]; then
         error "离线包目录不存在: $APPS_DIR"
         echo ""
-        echo "请确保 apps/ 目录与此脚本在同一目录下，结构如下:"
-        echo "  apps/casks/           - DMG 和 ZIP 应用"
-        echo "  apps/vscode-extensions/ - VSCode 插件 (.vsix)"
-        echo "  apps/python/          - Python 包 (.whl)"
-        echo "  apps/skills/          - Claude Code Skills"
+        echo "请确保以下子目录与此脚本在同一目录下:"
+        echo "  casks/                - DMG 和 ZIP 应用"
+        echo "  vscode-extensions/    - VSCode 插件 (.vsix)"
+        echo "  python/               - Python 包 (.whl)"
+        echo "  skills/               - Claude Code Skills"
         exit 1
     fi
     success "离线包目录存在: $APPS_DIR"
@@ -456,7 +455,7 @@ install_homebrew_notice() {
     echo -e "${YELLOW}│  - pandoc, wget, jq, tree, ffmpeg                              │${NC}"
     echo -e "${YELLOW}├────────────────────────────────────────────────────────────────┤${NC}"
     echo -e "${YELLOW}│  如需安装，请联网后运行:                                       │${NC}"
-    echo -e "${YELLOW}│  ${CYAN}./install_ai_tools.sh${YELLOW}                                         │${NC}"
+    echo -e "${YELLOW}│  ${CYAN}../install_ai_tools.sh${YELLOW}                                        │${NC}"
     echo -e "${YELLOW}└────────────────────────────────────────────────────────────────┘${NC}"
     echo ""
 
@@ -809,7 +808,7 @@ install_skills() {
             [[ -d "$sysu_cc/commands" ]] && cp -r "$sysu_cc/commands/"* "$HOME/.claude/commands/" 2>/dev/null || true
 
             # 创建安装标记
-            echo "Installed offline from apps/skills/sysu-awesome-cc" > "$HOME/.claude/.sysu-awesome-cc-installed"
+            echo "Installed offline from skills/sysu-awesome-cc" > "$HOME/.claude/.sysu-awesome-cc-installed"
             echo "Date: $(date)" >> "$HOME/.claude/.sysu-awesome-cc-installed"
 
             success "SYSU Awesome CC 已安装"
@@ -891,7 +890,7 @@ print_next_steps() {
     echo ""
     echo -e "${BOLD}下一步:${NC}"
     echo "  1. 如需安装 Homebrew 和命令行工具，请联网后运行:"
-    echo -e "     ${CYAN}./install_ai_tools.sh${NC}"
+    echo -e "     ${CYAN}../install_ai_tools.sh${NC}  (或从项目根目录运行 ./install_ai_tools.sh)"
     echo "  2. 打开 CC-Switch 应用配置 API 密钥"
     echo "  3. 或运行 'claude login' 登录 Anthropic 账号"
     echo "  4. 运行 'opencode' 或 'claude' 开始使用"

@@ -33,6 +33,9 @@ fi
 BREW_PREFIX="/usr/local"
 ARCH_NAME="Intel (x86_64)"
 
+# 获取脚本所在目录 (用于定位 recommended_skills 等相对路径)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # ══════════════════════════════════════════════════════════════
 # 颜色和日志函数
 # ══════════════════════════════════════════════════════════════
@@ -496,8 +499,39 @@ install_claude_code() {
     fi
 }
 
+install_recommended_skills() {
+    print_section 10 "推荐 Skills"
+
+    # 使用脚本所在目录的相对路径
+    local SKILLS_SRC="$SCRIPT_DIR/recommended_skills"
+    local SKILLS_DEST="$HOME/.claude/skills"
+
+    # 检查源目录是否存在
+    if [[ ! -d "$SKILLS_SRC" ]]; then
+        warning "推荐 Skills 源目录不存在: $SKILLS_SRC"
+        return 0
+    fi
+
+    if $DRY_RUN; then
+        info "[DRY-RUN] 将复制推荐 Skills 到 $SKILLS_DEST"
+        local count=$(ls -d "$SKILLS_SRC"/*/ 2>/dev/null | wc -l | tr -d ' ')
+        info "[DRY-RUN] 找到 $count 个推荐 Skills"
+        return 0
+    fi
+
+    # 创建目标目录
+    mkdir -p "$SKILLS_DEST"
+
+    # 复制 skills
+    installing "正在复制推荐 Skills 到 $SKILLS_DEST..."
+    cp -R "$SKILLS_SRC"/* "$SKILLS_DEST"/ 2>/dev/null || true
+
+    local count=$(ls -d "$SKILLS_DEST"/*/ 2>/dev/null | wc -l | tr -d ' ')
+    success "已安装 $count 个推荐 Skills"
+}
+
 install_cc_switch() {
-    print_section 10 "CC-Switch"
+    print_section 11 "CC-Switch"
 
     # 检测: Homebrew cask / .app 文件
     if is_cask_installed cc-switch || is_app_installed "CC-Switch"; then
@@ -523,7 +557,7 @@ install_cc_switch() {
 }
 
 install_uv() {
-    print_section 11 "uv (Python 包管理器)"
+    print_section 12 "uv (Python 包管理器)"
 
     if $SKIP_PYTHON; then
         skip "用户选择跳过"
@@ -552,7 +586,7 @@ install_uv() {
 }
 
 install_data_tools() {
-    print_section 12 "数据处理工具 (pandoc, wget, jq, tree, ffmpeg)"
+    print_section 13 "数据处理工具 (pandoc, wget, jq, tree, ffmpeg)"
 
     local tools=("pandoc" "wget" "jq" "tree" "ffmpeg")
     local installed=()
@@ -585,7 +619,7 @@ install_data_tools() {
 }
 
 install_python_libs() {
-    print_section 13 "Python 库 (通过 conda base 环境安装)"
+    print_section 14 "Python 库 (通过 conda base 环境安装)"
 
     if $SKIP_PYTHON; then
         skip "用户选择跳过"
@@ -639,7 +673,7 @@ install_python_libs() {
 }
 
 install_vscode_extensions() {
-    print_section 14 "VSCode 插件"
+    print_section 15 "VSCode 插件"
 
     if $SKIP_VSCODE || $SKIP_PLUGINS; then
         skip "用户选择跳过"
@@ -683,7 +717,7 @@ install_vscode_extensions() {
 }
 
 install_skills() {
-    print_section 15 "Anthropic Skills (手动安装提示)"
+    print_section 16 "Anthropic Skills (手动安装提示)"
 
     if $SKIP_SKILLS; then
         skip "用户选择跳过"
@@ -730,7 +764,7 @@ install_document_skills() {
 }
 
 install_sysu_awesome_cc() {
-    print_section 17 "SYSU Awesome CC"
+    print_section 18 "SYSU Awesome CC"
 
     if $SKIP_SKILLS; then
         skip "用户选择跳过"
@@ -805,7 +839,7 @@ install_sysu_awesome_cc() {
 }
 
 install_clash_verge() {
-    print_section 18 "Clash Verge Rev (网络代理)"
+    print_section 19 "Clash Verge Rev (网络代理)"
 
     local already_installed=false
 
@@ -957,7 +991,7 @@ print_next_steps() {
 # 主流程
 # ══════════════════════════════════════════════════════════════
 
-TOTAL_STEPS=18
+TOTAL_STEPS=19
 
 main() {
     # 初始化日志
@@ -986,17 +1020,18 @@ main() {
     install_python           # 5
     install_miniconda        # 6 (新增)
     install_vscode           # 7
-    install_opencode         # 8
-    install_claude_code      # 9
-    install_cc_switch        # 10
-    install_uv               # 11
-    install_data_tools       # 12
-    install_python_libs      # 13
-    install_vscode_extensions # 14
-    install_skills           # 15
-    install_document_skills  # 16 (空操作，保留兼容性)
-    install_sysu_awesome_cc  # 17
-    install_clash_verge      # 18
+    install_opencode           # 8
+    install_claude_code        # 9
+    install_recommended_skills # 10
+    install_cc_switch          # 11
+    install_uv                 # 12
+    install_data_tools         # 13
+    install_python_libs        # 14
+    install_vscode_extensions  # 15
+    install_skills             # 16
+    install_document_skills    # 17 (空操作，保留兼容性)
+    install_sysu_awesome_cc    # 18
+    install_clash_verge        # 19
 
     # 显示结果
     print_footer

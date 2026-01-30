@@ -10,7 +10,7 @@ macOS AI 工具套装安装脚本和文档，为 macOS 用户提供一键安装 
 | `install_ai_tools_arm64.sh` | Apple Silicon (M1/M2/M3/M4) 专用安装脚本 |
 | `install_ai_tools_x86_64.sh` | Intel Mac 专用安装脚本 |
 | `download_tools.sh` | 离线包下载脚本，在有网络的机器上运行 |
-| `install_ai_tools_offline.sh` | 离线安装脚本，无需网络 |
+| `apps/install_ai_tools_offline.sh` | 离线安装脚本，无需网络 |
 | `macOS AI工具套装安装指南.md` | 手动安装步骤文档 |
 | `apps/` | 离线安装资源目录 |
 
@@ -40,7 +40,9 @@ macOS AI 工具套装安装脚本和文档，为 macOS 用户提供一键安装 
 
 # 步骤 2：将整个目录复制到目标机器
 # 步骤 3：在目标机器上运行
-./install_ai_tools_offline.sh
+./apps/install_ai_tools_offline.sh
+# 或进入 apps 目录后运行:
+cd apps && ./install_ai_tools_offline.sh
 ```
 
 ## Directory Structure
@@ -50,38 +52,40 @@ macOS AI 工具套装安装脚本和文档，为 macOS 用户提供一键安装 
 ├── install_ai_tools_arm64.sh     # Apple Silicon 安装
 ├── install_ai_tools_x86_64.sh    # Intel 安装
 ├── download_tools.sh             # 离线包下载
-├── install_ai_tools_offline.sh   # 离线安装
 ├── macOS AI工具套装安装指南.md    # 手动安装文档
+├── recommended_skills/           # 推荐 Skills (自动安装到 ~/.claude/skills/)
 └── apps/                         # 离线安装资源
-    ├── casks/                    # GUI 应用 (VSCode, Claude Code 等)
-    │   └── {app}/{arm64,x86_64}/ # 按架构分类
-    ├── vscode-extensions/        # VSCode 插件 (.vsix)
-    ├── python/                   # Python wheels
-    └── skills/                   # Claude Code Skills
+    ├── install_ai_tools_offline.sh  # 离线安装脚本
+    ├── casks/                       # GUI 应用 (VSCode, Claude Code 等)
+    │   └── {app}/{arm64,x86_64}/    # 按架构分类
+    ├── vscode-extensions/           # VSCode 插件 (.vsix)
+    ├── python/                      # Python wheels
+    └── skills/                      # Claude Code Skills
 ```
 
 ## Script Architecture
 
-安装脚本分 18 个步骤顺序执行 (v1.1):
+安装脚本分 19 个步骤顺序执行 (v1.2):
 
 1. Xcode Command Line Tools
 2. Homebrew
 3. Git
 4. Node.js
 5. Python3
-6. **Miniconda** (新增 - 数据科学环境)
+6. **Miniconda** (数据科学环境)
 7. VSCode
 8. OpenCode (使用 `anomalyco/tap/opencode`)
 9. Claude Code
-10. CC-Switch
-11. uv
-12. 数据处理工具 (pandoc, wget, jq, tree, ffmpeg)
-13. Python 库 (via conda base 环境)
-14. VSCode 插件
-15. Skills（需 `--with-skills` 启用）
-16. Document Skills (空操作，保留兼容)
-17. SYSU Awesome CC（需 `--with-skills` 启用）
-18. Clash Verge Rev
+10. **推荐 Skills** (从 `recommended_skills/` 复制)
+11. CC-Switch
+12. uv
+13. 数据处理工具 (pandoc, wget, jq, tree, ffmpeg)
+14. Python 库 (via conda base 环境)
+15. VSCode 插件
+16. Anthropic Skills（需 `--with-skills` 启用）
+17. Document Skills (空操作，保留兼容)
+18. SYSU Awesome CC（需 `--with-skills` 启用）
+19. Clash Verge Rev
 
 每个步骤都有幂等性检测：已安装的工具会自动跳过。
 
