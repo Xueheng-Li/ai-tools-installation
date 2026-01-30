@@ -209,6 +209,20 @@ is_xcode_cli_installed() {
     xcode-select -p &> /dev/null
 }
 
+# Check if CLT needs update by checking softwareupdate for available updates
+is_xcode_cli_outdated() {
+    if ! xcode-select -p &> /dev/null; then
+        return 1  # Not installed, so not "outdated"
+    fi
+
+    # Check softwareupdate for CLT updates available
+    if softwareupdate --list 2>&1 | grep -qi "Command Line Tools"; then
+        return 0  # Update available means current is outdated
+    fi
+
+    return 1  # Not outdated
+}
+
 is_vscode_extension_installed() {
     code --list-extensions 2>/dev/null | grep -q "^$1$"
 }
@@ -254,21 +268,51 @@ install_xcode_cli() {
     print_section 1 "Xcode Command Line Tools"
 
     if is_xcode_cli_installed; then
-        skip "已安装"
-        return 0
+        # Check if outdated
+        if is_xcode_cli_outdated; then
+            warning "Xcode CLT 已安装但版本过旧，需要更新"
+
+            if $DRY_RUN; then
+                info "[DRY-RUN] 将重新安装 Xcode Command Line Tools"
+                return 0
+            fi
+
+            echo ""
+            echo -e "${YELLOW}检测到 Xcode Command Line Tools 版本过旧${NC}"
+            echo -e "将执行以下操作："
+            echo -e "  1. 删除旧版本"
+            echo -e "  2. 重新安装最新版本"
+            echo ""
+            read -p "按回车键继续，或 Ctrl+C 取消..." -r
+
+            # Remove old CLT
+            installing "正在删除旧版本..."
+            sudo rm -rf /Library/Developer/CommandLineTools
+
+            # Reinstall
+            installing "正在重新安装 Xcode Command Line Tools..."
+            xcode-select --install 2>/dev/null || true
+
+            echo "请在弹出的窗口中点击「安装」，等待安装完成后按回车继续..."
+            read -r
+        else
+            skip "已安装"
+            return 0
+        fi
+    else
+        # Fresh install
+        if $DRY_RUN; then
+            info "[DRY-RUN] 将安装 Xcode Command Line Tools"
+            return 0
+        fi
+
+        installing "正在安装 Xcode Command Line Tools..."
+        xcode-select --install 2>/dev/null || true
+
+        # 等待安装完成
+        echo "请在弹出的窗口中点击「安装」，等待安装完成后按回车继续..."
+        read -r
     fi
-
-    if $DRY_RUN; then
-        info "[DRY-RUN] 将安装 Xcode Command Line Tools"
-        return 0
-    fi
-
-    installing "正在安装 Xcode Command Line Tools..."
-    xcode-select --install 2>/dev/null || true
-
-    # 等待安装完成
-    echo "请在弹出的窗口中点击「安装」，等待安装完成后按回车继续..."
-    read -r
 
     if is_xcode_cli_installed; then
         success "Xcode Command Line Tools 安装完成"
@@ -408,25 +452,9 @@ install_python() {
         return 0
     fi
 
-    if is_brew_installed python3 || is_brew_installed python@3.12 || is_brew_installed python@3.11; then
-        skip "已安装 ($(python3 --version))"
-        return 0
-    fi
-
-    if $DRY_RUN; then
-        info "[DRY-RUN] 将安装 Python3"
-        return 0
-    fi
-
-    installing "正在安装 Python3..."
-    brew install python3
-
-    if is_installed python3; then
-        success "Python3 安装完成 ($(python3 --version))"
-    else
-        error "Python3 安装失败"
-        return 1
-    fi
+    # Python 由 Miniconda 统一管理，不再单独安装 Homebrew Python
+    info "Python 由 Miniconda 管理 (见步骤 6)"
+    skip "将在 Miniconda 步骤安装"
 }
 
 install_miniconda() {
@@ -682,31 +710,25 @@ install_data_tools() {
 }
 
 install_python_libs() {
-    print_section 14 "Python 库 (Homebrew Python)"
+    print_section 14 "Python 库"
 
     if $SKIP_PYTHON; then
         skip "用户选择跳过"
         return 0
     fi
 
-    # 注意: 主要的数据科学包已在 Miniconda base 环境中安装
-    # 此步骤为 Homebrew Python 安装基础包 (可选)
-
-    local libs=("markitdown")
+    # 主要数据科学包已在 Miniconda 步骤 6 安装
+    # 此步骤仅作为备用检查和提示
 
     if $DRY_RUN; then
-        info "[DRY-RUN] 将为 Homebrew Python 安装: ${libs[*]}"
-        info "[DRY-RUN] 注: 主要数据科学包已在 Miniconda base 环境中安装"
+        info "[DRY-RUN] 检查 Python 库安装状态"
+        info "[DRY-RUN] 主要包 (pandas, numpy, jupyter 等) 已在 Miniconda base 环境安装"
         return 0
     fi
 
-    installing "正在为 Homebrew Python 安装基础包..."
-    pip3 install --upgrade pip 2>/dev/null || true
-    pip3 install "${libs[@]}" 2>/dev/null || warning "部分包安装失败"
-
-    success "Python 库安装完成"
-    info "提示: 数据科学包 (pandas, numpy 等) 已安装在 Miniconda base 环境中"
-    info "使用 'conda activate base' 激活环境后使用"
+    info "主要数据科学包已在 Miniconda base 环境中安装 (步骤 6)"
+    info "已安装: python=3.11, pandas, numpy, matplotlib, scipy, openpyxl, xlrd, jupyter, markitdown"
+    skip "主要包已在 Miniconda 步骤安装"
 }
 
 install_vscode_extensions() {

@@ -192,6 +192,20 @@ is_xcode_cli_installed() {
     xcode-select -p &> /dev/null
 }
 
+# Check if CLT needs update by checking softwareupdate for available updates
+is_xcode_cli_outdated() {
+    if ! xcode-select -p &> /dev/null; then
+        return 1  # Not installed, so not "outdated"
+    fi
+
+    # Check softwareupdate for CLT updates available
+    if softwareupdate --list 2>&1 | grep -qi "Command Line Tools"; then
+        return 0  # Update available means current is outdated
+    fi
+
+    return 1  # Not outdated
+}
+
 is_vscode_extension_installed() {
     code --list-extensions 2>/dev/null | grep -q "^$1$"
 }
@@ -237,21 +251,51 @@ install_xcode_cli() {
     print_section 1 "Xcode Command Line Tools"
 
     if is_xcode_cli_installed; then
-        skip "已安装"
-        return 0
+        # Check if outdated
+        if is_xcode_cli_outdated; then
+            warning "Xcode CLT 已安装但版本过旧，需要更新"
+
+            if $DRY_RUN; then
+                info "[DRY-RUN] 将重新安装 Xcode Command Line Tools"
+                return 0
+            fi
+
+            echo ""
+            echo -e "${YELLOW}检测到 Xcode Command Line Tools 版本过旧${NC}"
+            echo -e "将执行以下操作："
+            echo -e "  1. 删除旧版本"
+            echo -e "  2. 重新安装最新版本"
+            echo ""
+            read -p "按回车键继续，或 Ctrl+C 取消..." -r
+
+            # Remove old CLT
+            installing "正在删除旧版本..."
+            sudo rm -rf /Library/Developer/CommandLineTools
+
+            # Reinstall
+            installing "正在重新安装 Xcode Command Line Tools..."
+            xcode-select --install 2>/dev/null || true
+
+            echo "请在弹出的窗口中点击「安装」，等待安装完成后按回车继续..."
+            read -r
+        else
+            skip "已安装"
+            return 0
+        fi
+    else
+        # Fresh install
+        if $DRY_RUN; then
+            info "[DRY-RUN] 将安装 Xcode Command Line Tools"
+            return 0
+        fi
+
+        installing "正在安装 Xcode Command Line Tools..."
+        xcode-select --install 2>/dev/null || true
+
+        # 等待安装完成
+        echo "请在弹出的窗口中点击「安装」，等待安装完成后按回车继续..."
+        read -r
     fi
-
-    if $DRY_RUN; then
-        info "[DRY-RUN] 将安装 Xcode Command Line Tools"
-        return 0
-    fi
-
-    installing "正在安装 Xcode Command Line Tools..."
-    xcode-select --install 2>/dev/null || true
-
-    # 等待安装完成
-    echo "请在弹出的窗口中点击「安装」，等待安装完成后按回车继续..."
-    read -r
 
     if is_xcode_cli_installed; then
         success "Xcode Command Line Tools 安装完成"
@@ -386,25 +430,9 @@ install_python() {
         return 0
     fi
 
-    if is_brew_installed python3 || is_brew_installed python@3.12 || is_brew_installed python@3.11; then
-        skip "已安装 ($(python3 --version))"
-        return 0
-    fi
-
-    if $DRY_RUN; then
-        info "[DRY-RUN] 将安装 Python3"
-        return 0
-    fi
-
-    installing "正在安装 Python3..."
-    brew install python3
-
-    if is_installed python3; then
-        success "Python3 安装完成 ($(python3 --version))"
-    else
-        error "Python3 安装失败"
-        return 1
-    fi
+    # Python 由 Miniconda 统一管理，不再单独安装 Homebrew Python
+    info "Python 由 Miniconda 管理 (见步骤 6)"
+    skip "将在 Miniconda 步骤安装"
 }
 
 install_miniconda() {
@@ -423,6 +451,7 @@ install_miniconda() {
 
     if $DRY_RUN; then
         info "[DRY-RUN] 将安装 Miniconda"
+        info "[DRY-RUN] 将初始化 conda 并在 base 环境安装数据科学包"
         return 0
     fi
 
@@ -430,32 +459,34 @@ install_miniconda() {
     brew install --cask miniconda
 
     # 获取 miniconda 安装路径 (Intel Mac 使用 /usr/local)
-    local CONDA_PATH
+    local CONDA_PATH=""
     if [[ -d "$BREW_PREFIX/Caskroom/miniconda/base" ]]; then
         CONDA_PATH="$BREW_PREFIX/Caskroom/miniconda/base"
-    else
-        # 尝试查找 miniconda 路径
-        CONDA_PATH=$(brew --prefix miniconda 2>/dev/null || echo "")
-        if [[ -z "$CONDA_PATH" || ! -d "$CONDA_PATH" ]]; then
-            warning "无法找到 Miniconda 安装路径，请手动初始化"
-            return 0
-        fi
+    elif [[ -d "$HOME/miniconda3" ]]; then
+        CONDA_PATH="$HOME/miniconda3"
     fi
 
-    # 初始化 conda
+    if [[ -z "$CONDA_PATH" ]]; then
+        warning "无法确定 Miniconda 安装路径，跳过初始化"
+        return 0
+    fi
+
+    # 初始化 conda for zsh
     installing "正在初始化 conda..."
-    if [[ -f "$CONDA_PATH/bin/conda" ]]; then
-        "$CONDA_PATH/bin/conda" init zsh 2>/dev/null || true
-        "$CONDA_PATH/bin/conda" init bash 2>/dev/null || true
+    "$CONDA_PATH/bin/conda" init zsh
 
-        # 禁用自动激活 base 环境
-        "$CONDA_PATH/bin/conda" config --set auto_activate_base false
+    # 禁用 base 环境自动激活
+    "$CONDA_PATH/bin/conda" config --set auto_activate_base false
 
-        success "Miniconda 安装完成"
-        info "请运行 'source ~/.zshrc' 或重启终端使 conda 生效"
-    else
-        warning "Miniconda 安装完成，但无法初始化。请手动运行: conda init zsh"
-    fi
+    # 在 base 环境安装数据科学包
+    installing "正在安装数据科学包到 base 环境..."
+    "$CONDA_PATH/bin/conda" install -n base python=3.11 pandas numpy matplotlib scipy openpyxl xlrd jupyter -y || warning "部分 conda 包安装失败"
+
+    # markitdown 不在 conda 官方源，使用 pip 安装
+    "$CONDA_PATH/bin/pip" install markitdown || warning "markitdown 安装失败"
+
+    success "Miniconda 安装完成"
+    info "请执行 'source ~/.zshrc' 或重启终端以使 conda 生效"
 }
 
 install_vscode() {
@@ -657,57 +688,25 @@ install_data_tools() {
 }
 
 install_python_libs() {
-    print_section 14 "Python 库 (通过 conda base 环境安装)"
+    print_section 14 "Python 库"
 
     if $SKIP_PYTHON; then
         skip "用户选择跳过"
         return 0
     fi
 
-    local libs=("python=3.11" "pandas" "numpy" "matplotlib" "scipy" "openpyxl" "xlrd" "jupyter")
+    # 主要数据科学包已在 Miniconda 步骤 6 安装
+    # 此步骤仅作为备用检查和提示
 
     if $DRY_RUN; then
-        info "[DRY-RUN] 将在 conda base 环境安装 Python 库: ${libs[*]}"
+        info "[DRY-RUN] 检查 Python 库安装状态"
+        info "[DRY-RUN] 主要包 (pandas, numpy, jupyter 等) 已在 Miniconda base 环境安装"
         return 0
     fi
 
-    # 检查 conda 是否可用
-    local CONDA_PATH
-    if is_installed conda; then
-        CONDA_PATH="conda"
-    elif [[ -f "$BREW_PREFIX/Caskroom/miniconda/base/bin/conda" ]]; then
-        CONDA_PATH="$BREW_PREFIX/Caskroom/miniconda/base/bin/conda"
-    else
-        warning "Miniconda 未安装或未找到，使用 pip3 安装 Python 库"
-        installing "正在使用 pip3 安装 Python 库..."
-        pip3 install --upgrade pip
-        pip3 install pandas numpy matplotlib scipy openpyxl xlrd jupyter markitdown
-        success "Python 库安装完成 (via pip3)"
-        return 0
-    fi
-
-    installing "正在 conda base 环境安装 Python 库..."
-
-    # 在 base 环境安装包
-    "$CONDA_PATH" install -n base -y "${libs[@]}" 2>/dev/null || {
-        warning "conda 安装部分包失败，尝试使用 conda-forge channel..."
-        "$CONDA_PATH" install -n base -c conda-forge -y "${libs[@]}" 2>/dev/null || {
-            warning "conda 安装失败，回退到 pip3 安装..."
-            pip3 install --upgrade pip
-            pip3 install pandas numpy matplotlib scipy openpyxl xlrd jupyter
-        }
-    }
-
-    # markitdown 不在 conda 官方源，使用 pip 安装
-    installing "正在安装 markitdown (via pip)..."
-    if [[ "$CONDA_PATH" != "conda" ]]; then
-        local PIP_PATH=$(dirname "$CONDA_PATH")/pip
-        "$PIP_PATH" install markitdown 2>/dev/null || pip3 install markitdown || warning "markitdown 安装失败"
-    else
-        pip install markitdown 2>/dev/null || pip3 install markitdown || warning "markitdown 安装失败"
-    fi
-
-    success "Python 库安装完成"
+    info "主要数据科学包已在 Miniconda base 环境中安装 (步骤 6)"
+    info "已安装: python=3.11, pandas, numpy, matplotlib, scipy, openpyxl, xlrd, jupyter, markitdown"
+    skip "主要包已在 Miniconda 步骤安装"
 }
 
 install_vscode_extensions() {
