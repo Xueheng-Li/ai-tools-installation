@@ -39,3 +39,5 @@ ENV/
 .vscode/
 *.sublime-project
 *.sublime-workspace
+
+multi_agent_tasks
