@@ -1,20 +1,76 @@
 ---
 created: 2026-01-29
+updated: 2026-01-30
 tags:
   - type/reference
   - status/active
 aliases: [AI工具安装, macOS开发环境搭建]
 ---
-
 # macOS AI 工具套装安装指南
 
 为学校领导 Mac 电脑安装完整 AI 开发环境的步骤说明。本指南适用于 macOS (Intel 和 Apple Silicon)。
 
+## 架构说明
+
+macOS 支持两种 CPU 架构，安装路径和某些配置有所不同：
+
+| 架构                            | 芯片        | 检测命令                     | Homebrew 路径     |
+| ------------------------------- | ----------- | ---------------------------- | ----------------- |
+| **Apple Silicon (arm64)** | M1/M2/M3/M4 | `uname -m` 返回 `arm64`  | `/opt/homebrew` |
+| **Intel (x86_64)**        | Intel Core  | `uname -m` 返回 `x86_64` | `/usr/local`    |
+
+本指南中的命令会根据架构自动适配，但 PATH 配置部分需要根据实际架构选择。
+
 ## 前置准备
+
+### 打开终端
 
 打开终端应用 (`Terminal.app`)
 
-## 1. VSCode
+### 确保使用 zsh
+
+macOS Catalina (10.15) 起默认使用 zsh，但旧账户可能仍是 bash。检查并设置：
+
+```bash
+# 查看当前 shell
+echo $SHELL
+
+# 如果不是 /bin/zsh，设置 zsh 为默认
+chsh -s /bin/zsh
+
+# 重新登录后生效
+```
+
+## 快速安装（推荐）
+
+如果不想手动执行每个步骤，可以使用自动安装脚本：
+
+```bash
+# 下载并运行（自动检测 Intel/Apple Silicon）
+./install_ai_tools.sh
+
+# 预览模式（不实际安装）
+./install_ai_tools.sh --dry-run
+
+# 包含 Skills
+./install_ai_tools.sh --with-skills
+```
+
+脚本会自动检测已安装的工具并跳过，重复运行安全。以下是手动安装的详细步骤。
+
+---
+
+## 1. Xcode Command Line Tools
+
+macOS 开发必需的编译工具包（约 1GB），Homebrew、Git 和许多开发工具都依赖它。
+
+```bash
+xcode-select --install
+```
+
+在弹出窗口中点击"安装"，等待完成。
+
+## 2. VSCode
 
 从官网下载安装包：
 
@@ -23,33 +79,24 @@ aliases: [AI工具安装, macOS开发环境搭建]
 3. 双击 `.dmg` 文件拖拽到 Applications 文件夹
 4. 启动 VSCode，完成首次设置
 
-## 2. Homebrew
+## 3. Homebrew
 
 Homebrew 是 macOS 最流行的包管理器，后续所有命令行工具都通过它安装。
-
-**注意**：Homebrew 不需要完整的 Xcode IDE，但需要 Xcode Command Line Tools（轻量级编译工具包，约 1GB）。
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 ```
 
-如果安装过程中提示需要 Command Line Tools，运行：
+安装完成后根据终端提示，将 Homebrew 添加到 PATH。
+
+**Apple Silicon (M1/M2/M3/M4)** 需要手动配置：
 
 ```bash
-xcode-select --install
-```
-
-安装完成后根据终端提示，将 Homebrew 添加到 PATH（如果提示的话）。通常需要运行：
-
-```bash
-# Apple Silicon (M1/M2/M3/M4)
 echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
 eval "$(/opt/homebrew/bin/brew shellenv)"
-
-# Intel（macOS 默认使用 zsh）
-echo 'eval "$(/usr/local/bin/brew shellenv)"' >> ~/.zprofile
-eval "$(/usr/local/bin/brew shellenv)"
 ```
+
+**Intel Mac** 的 `/usr/local/bin` 已在默认 PATH 中，通常无需额外配置。
 
 验证安装：
 
@@ -57,12 +104,12 @@ eval "$(/usr/local/bin/brew shellenv)"
 brew --version
 ```
 
-## 3. Git
+## 4. Git
 
 macOS 自带 Git，但通过 Homebrew 安装可获得最新版本。
 
 ```bash
-# 安装 Git（如果需要 Xcode Command Line Tools，Homebrew 会提示）
+# 安装 Git
 brew install git
 
 # 验证版本
@@ -73,35 +120,28 @@ git config --global user.name "领导姓名"
 git config --global user.email "领导邮箱"
 ```
 
-如果遇到权限问题，先安装 Xcode Command Line Tools：
+## 5. OpenCode
 
-```bash
-xcode-select --install
-```
-
-## 4. OpenCode
-
-OpenCode 是开源 AI 编程助手（Go 语言编写），可在终端中直接使用。
+OpenCode 是开源 AI 编程助手，可在终端中直接使用。
 
 ```bash
 # 方法 1：使用安装脚本（推荐）
-curl -fsSL https://raw.githubusercontent.com/opencode-ai/opencode/refs/heads/main/install | bash
+curl -fsSL https://opencode.ai/install | bash
 
-# 方法 2：使用 Homebrew
-brew install opencode-ai/tap/opencode
-
-# 方法 3：使用 Go（如果已安装 Go）
-go install github.com/opencode-ai/opencode@latest
+# 方法 2：使用 Homebrew（推荐）
+brew install anomalyco/tap/opencode
 
 # 验证安装
 opencode --version
 ```
 
+**注意**：当前最新版本为 **1.1.44**，由 `anomalyco/tap` 维护。旧的 `opencode-ai/tap` 已 7 个月未更新，请使用新的安装命令。
+
 首次使用需要配置 API 密钥。OpenCode 支持多种 AI 模型提供商，包括 Anthropic、OpenAI 等。
 
 OpenCode 兼容 Claude Code 的 Skills 格式，会自动读取 `~/.claude/skills/` 目录。使用 CC-Switch 安装的 Skills 两个工具都能用。
 
-## 5. Node.js
+## 6. Node.js
 
 Node.js 是 JavaScript 运行时，Claude Code 和许多 AI 工具依赖它。
 
@@ -114,7 +154,7 @@ node --version
 npm --version
 ```
 
-## 6. Claude Code
+## 7. Claude Code
 
 Claude Code 是 Anthropic 官方 AI 编程助手，功能强大的终端 AI 工具。
 
@@ -180,31 +220,34 @@ brew upgrade --cask cc-switch
 ```
 
 安装后打开 CC-Switch 应用：
+
 1. 点击右上角 Skills 按钮
 2. 浏览预配置的 GitHub 仓库（包含 Anthropic 官方 Skills）
 3. 点击 Install 一键安装到 `~/.claude/skills/`
 
 CC-Switch 还支持：
+
 - 多 API 配置一键切换
 - 同时管理 Claude Code、OpenCode、Gemini CLI
 - 自定义 Skills 仓库
 
-## 7. VSCode 插件
+## 8. VSCode 插件
 
 打开 VSCode，按 `Cmd + Shift + X` 打开插件市场，搜索并安装以下插件：
 
 ### Markdown 编辑与预览
 
 - **Markdown Preview Enhanced** (`shd101wyy.markdown-preview-enhanced`)
+
   - 强大的 Markdown 预览，支持导出 PDF、HTML、PNG
   - 支持数学公式、流程图、代码高亮
   - 预览：点击右上角预览按钮
-
 - **Markdown All in One** (`yzhang.markdown-all-in-one`)
+
   - 全方位 Markdown 编辑支持
   - 自动完成、列表编辑、表格格式化
-
 - **Markdown PDF** (`yzane.markdown-pdf`)
+
   - 将 Markdown 转换为 PDF
 
 ### Office 文档预览
@@ -217,9 +260,16 @@ CC-Switch 还支持：
 
 安装后，点击 `.docx` 或 `.xlsx` 文件会自动在 VSCode 内部预览。
 
-## 8. 数据处理工具
+## 9. Python 环境
 
-### Python
+macOS 上有多种方式安装 Python，根据使用场景选择：
+
+| 方式                      | 适用场景           | 优点                   | 缺点                |
+| ------------------------- | ------------------ | ---------------------- | ------------------- |
+| **Homebrew Python** | 通用开发、脚本     | 简单、与系统集成好     | 虚拟环境管理较繁琐  |
+| **Miniconda**       | 数据科学、机器学习 | 环境隔离好、包管理方便 | 需要学习 conda 命令 |
+
+### 方式 1：Homebrew Python（简单场景）
 
 ```bash
 # 安装 Python 3（Homebrew 默认安装最新版）
@@ -230,7 +280,109 @@ python3 --version
 pip3 --version
 ```
 
+### 方式 2：Miniconda（数据科学推荐）
+
+Miniconda 是轻量级的 Anaconda，提供强大的环境管理和包管理能力，特别适合数据科学和机器学习项目。
+
+#### 为什么选择 Miniconda
+
+- **环境隔离**：每个项目可以有独立的 Python 版本和依赖
+- **包管理**：conda 可以解决复杂的依赖关系，避免版本冲突
+- **数据科学支持**：NumPy、Pandas、TensorFlow、PyTorch 等库都有优化版本
+- **跨平台**：同一个 environment.yml 可以在不同系统上复现环境
+
+#### 安装 Miniconda
+
+```bash
+# 使用 Homebrew 安装（推荐）
+brew install --cask miniconda
+
+# 初始化 shell（macOS 默认使用 zsh）
+conda init zsh
+
+# 重新加载配置
+source ~/.zshrc
+
+# 禁用 base 环境自动激活（推荐）
+conda config --set auto_activate_base false
+```
+
+**或者使用官方安装器**（更稳定）：
+
+```bash
+# 检测架构
+ARCH=$(uname -m)
+
+# Apple Silicon
+if [ "$ARCH" = "arm64" ]; then
+    curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh
+    bash Miniconda3-latest-MacOSX-arm64.sh
+fi
+
+# Intel
+if [ "$ARCH" = "x86_64" ]; then
+    curl -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+    bash Miniconda3-latest-MacOSX-x86_64.sh
+fi
+
+# 初始化并配置
+conda init zsh
+source ~/.zshrc
+conda config --set auto_activate_base false
+```
+
+#### 创建数据科学环境
+
+```bash
+# 创建专用环境（推荐 Python 3.11，兼容性最好）
+conda create -n data_science python=3.11
+
+# 激活环境
+conda activate data_science
+
+# 安装数据科学包
+conda install numpy pandas matplotlib scipy openpyxl xlrd jupyter
+
+# 验证安装
+python -c "import numpy, pandas, matplotlib; print('All packages imported successfully!')"
+
+# 退出环境
+conda deactivate
+```
+
+#### Conda 与 Homebrew Python 共存
+
+两者可以共存，互不干扰：
+
+- **默认状态**：使用 Homebrew Python (`/opt/homebrew/bin/python3`)
+- **数据科学工作**：手动 `conda activate data_science` 切换到 conda 环境
+- **切换回默认**：`conda deactivate` 退出 conda 环境
+
+```bash
+# 查看当前使用的 Python
+which python3
+
+# 列出所有 conda 环境
+conda env list
+```
+
+#### Conda 常用命令
+
+```bash
+conda --version              # 查看版本
+conda env list               # 列出所有环境
+conda activate <env>         # 激活环境
+conda deactivate             # 退出环境
+conda create -n <name> python=3.11  # 创建环境
+conda remove -n <name> --all # 删除环境
+conda list                   # 列出当前环境的包
+conda install <package>      # 安装包
+conda update --all           # 更新所有包
+```
+
 ### Python 数据分析库
+
+如果使用 Homebrew Python（不使用 Miniconda）：
 
 ```bash
 # 安装核心数据处理库
@@ -256,6 +408,8 @@ uv --version
 uv pip install pandas
 uv pip install -r requirements.txt
 ```
+
+## 10. 数据处理工具
 
 ### Pandoc
 
@@ -293,7 +447,7 @@ brew install ffmpeg
 
 ffmpeg 用于音视频格式转换、提取音频、压缩视频等，很多 AI 工具处理多媒体时需要它。
 
-## 9. ClashX Pro（网络代理工具）
+## 11. ClashX Pro（网络代理工具）
 
 ClashX Pro 是 macOS 下的代理客户端，使用 Clash Premium 内核，支持 SS、SSR、V2Ray、Trojan 等协议。在国内访问 GitHub、npm 等服务时可能需要。
 
@@ -362,7 +516,7 @@ ClashX Pro 已停止更新，仅支持 macOS 15 Sequoia 及以下版本。如遇
 - **Clash Verge Rev**: https://github.com/clash-verge-rev/clash-verge-rev（跨平台，仍在更新）
 - **ClashX.Meta**: https://github.com/MetaCubeX/ClashX.Meta（社区维护版本）
 
-## 10. AI 工具配置（可选）
+## 12. AI 工具配置（可选）
 
 OpenCode 和 Claude Code 都是终端工具，会调用系统安装的命令行工具。确保 Python、Pandoc、ffmpeg 等在 PATH 中即可：
 
@@ -374,7 +528,7 @@ ffmpeg -version
 uv --version
 ```
 
-## 11. 验证安装
+## 13. 验证安装
 
 在终端运行以下命令验证所有工具已正确安装：
 
@@ -401,12 +555,16 @@ python3 --version
 uv --version
 pip3 list | grep pandas
 
+# Conda（如果安装了 Miniconda）
+conda --version
+conda env list
+
 # 文档和多媒体处理
 pandoc --version
 ffmpeg -version
 ```
 
-## 12. VSCode 设置建议
+## 14. VSCode 设置建议
 
 在 VSCode 中按 `Cmd + ,` 打开设置，建议调整以下选项：
 
@@ -426,7 +584,7 @@ ffmpeg -version
 
 注：Office Viewer 插件的设置可在 VSCode 设置中搜索 "office" 查看可用选项。
 
-## 13. 常见问题
+## 15. 常见问题
 
 ### Homebrew 安装失败
 
@@ -434,7 +592,7 @@ ffmpeg -version
 
 ### Python 版本问题
 
-自 macOS 12.3 (Monterey) 起，系统不再预装 Python。必须通过 Homebrew 安装 Python 3，使用 `python3` 命令。
+自 macOS 12.3 (Monterey) 起，系统不再预装 Python。必须通过 Homebrew 或 Miniconda 安装 Python 3，使用 `python3` 命令。
 
 ### VSCode 插件无法安装
 
@@ -444,9 +602,22 @@ ffmpeg -version
 
 确保 Python 在 PATH 中，在终端运行 `which python3` 应该返回路径（如 `/opt/homebrew/bin/python3`）。
 
+如果使用 Miniconda，可能需要先激活环境：`conda activate data_science`
+
 ### Claude Code 登录问题
 
 运行 `claude login` 后会打开浏览器登录 Anthropic 账号，或使用 `ANTHROPIC_API_KEY` 环境变量配置 API 密钥。
+
+### Conda 环境问题
+
+```bash
+# 如果 conda 命令找不到，重新初始化
+~/miniconda3/bin/conda init zsh
+source ~/.zshrc
+
+# 如果环境激活后 Python 路径不对
+which python3  # 应该指向 conda 环境中的 python
+```
 
 ## 完成清单
 
@@ -454,12 +625,14 @@ ffmpeg -version
 - [ ] Homebrew 安装完成并验证
 - [ ] Git 安装完成并配置基本信息
 - [ ] Node.js 和 npm 安装完成
-- [ ] OpenCode 安装完成并验证
+- [ ] OpenCode 安装完成并验证（使用 anomalyco/tap）
 - [ ] Claude Code 安装完成并验证
 - [ ] CC-Switch 安装完成（可选）
 - [ ] Anthropic 官方 Skills 安装完成
 - [ ] VSCode 插件（Markdown Preview Enhanced、Office Viewer 等）安装完成
-- [ ] Python 3 和 uv 安装完成
+- [ ] Python 3 安装完成（Homebrew 或 Miniconda）
+- [ ] Miniconda 安装完成（可选，数据科学推荐）
+- [ ] uv 安装完成
 - [ ] Pandas 等数据分析库安装完成
 - [ ] Pandoc 安装完成并验证
 - [ ] ffmpeg 安装完成并验证
@@ -469,10 +642,12 @@ ffmpeg -version
 ## 下一步
 
 安装完成后，可以开始使用这些工具：
+
 - 使用 VSCode 编辑 Markdown、查看 Office 文档
 - 使用 OpenCode 或 Claude Code 进行 AI 辅助编程
 - 使用 Claude Code Skills 处理 Word、PDF、PPT、Excel 文档
 - 使用 Python 和 Pandas 处理数据（用 uv 加速安装）
+- 使用 Miniconda 管理数据科学环境
 - 使用 Pandoc 进行文档格式转换
 - 使用 ffmpeg 处理音视频文件
 
@@ -488,11 +663,14 @@ ffmpeg -version
 - Node.js 官网: https://nodejs.org/
 - OpenCode 官网: https://opencode.ai/
 - OpenCode GitHub: https://github.com/opencode-ai/opencode
+- OpenCode Homebrew Tap: https://github.com/anomalyco/homebrew-tap
 - Claude Code 文档: https://docs.anthropic.com/en/docs/claude-code
 - Anthropic 官方 Skills: https://github.com/anthropics/skills
 - Skills 目录 (skills.sh): https://skills.sh
 - npx skills (Vercel): https://github.com/vercel-labs/skills
 - CC-Switch: https://github.com/farion1231/cc-switch
+- Miniconda 官方文档: https://docs.anaconda.com/miniconda/
+- Miniforge (开源替代): https://github.com/conda-forge/miniforge
 - uv 文档: https://docs.astral.sh/uv/
 - Pandoc 官网: https://pandoc.org/
 - ffmpeg 官网: https://ffmpeg.org/
@@ -503,4 +681,5 @@ ffmpeg -version
 ---
 
 *Created: 2026-01-29*
+*Updated: 2026-01-30*
 *适用于 macOS (Intel 和 Apple Silicon)*

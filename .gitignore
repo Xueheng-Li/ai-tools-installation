@@ -41,3 +41,14 @@ ENV/
 *.sublime-workspace
 
 multi_agent_tasks
+
+# Downloaded resources (offline installation)
+apps/casks/
+apps/python/
+apps/vscode-extensions/
+apps/skills/
+
+# Downloaded skills repositories
+anthropic-official-skills/
+recommended_skills/
+sysu-awesome-cc/
